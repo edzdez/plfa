@@ -75,10 +75,13 @@ Give another example of a pair of operators that have an identity
 and are associative, commutative, and distribute over one another.
 (You do not have to prove these properties.)
 
+Sol. Differentiation & Addition
+
 Give an example of an operator that has an identity and is
 associative but is not commutative.
 (You do not have to prove these properties.)
 
+Sol. Subtraction
 
 ## Associativity
 
@@ -890,7 +893,17 @@ just apply the previous results which show addition
 is associative and commutative.
 
 ```agda
--- Your code goes here
++-swap : ∀ (m n p : ℕ) → m + (n + p) ≡ n + (m + p)
++-swap m n p =
+  begin
+    m + (n + p)
+  ≡⟨ sym (+-assoc m n p) ⟩
+    (m + n) + p
+  ≡⟨ cong (_+ p) (+-comm m n) ⟩
+    (n + m) + p
+  ≡⟨ +-assoc n m p ⟩
+    n + (m + p)
+  ∎
 ```
 
 
@@ -903,7 +916,18 @@ Show multiplication distributes over addition, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```agda
--- Your code goes here
+*-distrib-+ : ∀ (m n p : ℕ) → (m + n) * p ≡ m * p + n * p
+*-distrib-+ zero n p = refl
+*-distrib-+ (suc m) n p =
+  begin
+    p + (m + n) * p
+  ≡⟨ cong (p +_) (*-distrib-+ m n p) ⟩
+    p + (m * p + n * p)
+  ≡⟨ sym (+-assoc p (m * p) (n * p)) ⟩
+    (p + m * p) + n * p
+  ≡⟨⟩
+    (suc m * p) + n * p
+  ∎
 ```
 
 
@@ -916,7 +940,16 @@ Show multiplication is associative, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```agda
--- Your code goes here
+*-assoc : ∀ (m n p : ℕ) → (m * n) * p ≡ m * (n * p)
+*-assoc zero n p = refl
+*-assoc (suc m) n p =
+  begin
+    (n + m * n) * p
+  ≡⟨ *-distrib-+ n (m * n) p ⟩
+    n * p + (m * n) * p
+  ≡⟨ cong ((n * p) +_) (*-assoc m n p) ⟩
+    n * p + m * (n * p)
+  ∎
 ```
 
 
@@ -930,7 +963,25 @@ for all naturals `m` and `n`.  As with commutativity of addition,
 you will need to formulate and prove suitable lemmas.
 
 ```agda
--- Your code goes here
+*-identity : ∀ (n : ℕ) → n * 0 ≡ 0
+*-identity zero = refl
+*-identity (suc n) rewrite *-identity n = refl
+
+*-suc : ∀ (n m : ℕ) → n * suc m ≡ n + (n * m)
+*-suc zero m = refl
+*-suc (suc n) m rewrite *-suc n m | +-swap m n (n * m) = refl
+-- suc (suc n) m =
+--   begin
+--     suc (m + n * suc m)
+--   ≡⟨ cong suc (cong (m +_) (*-suc n m)) ⟩
+--     suc (m + (n + (n * m)))
+--   ≡⟨ cong suc (+-swap m n (n * m)) ⟩
+--     suc (n + (m + n * m))
+--   ∎
+
+*-comm : ∀ (m n : ℕ) → m * n ≡ n * m
+*-comm zero n rewrite *-identity n = refl
+*-comm (suc m) n rewrite *-suc n m | *-comm m n = refl
 ```
 
 
@@ -943,7 +994,9 @@ Show
 for all naturals `n`. Did your proof require induction?
 
 ```agda
--- Your code goes here
+identity-∸ : ∀ (n : ℕ) → zero ∸ n ≡ zero
+identity-∸ zero = refl
+identity-∸ (suc n) = refl
 ```
 
 
@@ -956,7 +1009,10 @@ Show that monus associates with addition, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```agda
--- Your code goes here
+∸-+-assoc : ∀ (m n p : ℕ) → m ∸ n ∸ p ≡ m ∸ (n + p)
+∸-+-assoc zero n p rewrite identity-∸ n | identity-∸ p | identity-∸ (n + p) = refl
+∸-+-assoc (suc m) zero p = refl
+∸-+-assoc (suc m) (suc n) p rewrite ∸-+-assoc m n p = refl
 ```
 
 
@@ -971,7 +1027,26 @@ Show the following three laws
 for all `m`, `n`, and `p`.
 
 ```
--- Your code goes here
+^-distribˡ-+-* : ∀ (m n p : ℕ) → m ^ (n + p) ≡ (m ^ n) * (m ^ p)
+^-distribˡ-+-* m zero p rewrite +-identityʳ (m ^ p) = refl
+^-distribˡ-+-* m (suc n) p rewrite ^-distribˡ-+-* m n p | *-assoc m (m ^ n) (m ^ p) = refl
+
+^-distribʳ-* : ∀ (m n p : ℕ) → (m * n) ^ p ≡ (m ^ p) * (n ^ p)
+^-distribʳ-* m n zero = refl
+^-distribʳ-* m n (suc p)
+  rewrite ^-distribʳ-* m n p
+    | *-assoc m n (m ^ p * n ^ p)
+    | *-comm n (m ^ p * n ^ p)
+    | *-assoc (m ^ p) (n ^ p) n
+    | *-comm (n ^ p) n
+    | *-assoc m (m ^ p) (n * n ^ p) = refl
+
+^-*-assoc : ∀ (m n p : ℕ) → (m ^ n) ^ p ≡ m ^ (n * p)
+^-*-assoc m n zero rewrite *-identity n = refl
+^-*-assoc m n (suc p)
+  rewrite ^-*-assoc m n p
+    | sym (^-distribˡ-+-* m n (n * p))
+    | sym (*-suc n p) = refl
 ```
 
 
@@ -996,7 +1071,43 @@ over bitstrings:
 For each law: if it holds, prove; if not, give a counterexample.
 
 ```agda
--- Your code goes here
+data Bin : Set where
+  ⟨⟩ : Bin
+  _O : Bin → Bin
+  _I : Bin → Bin
+
+inc : Bin → Bin
+inc ⟨⟩ = ⟨⟩ I
+inc (n O) = n I
+inc (n I) = (inc n)  O
+
+to : ℕ → Bin
+to zero = ⟨⟩ O
+to (suc n) = inc (to n)
+
+from : Bin → ℕ
+from ⟨⟩ = zero
+from (n O) = (from n) * 2
+from (n I) = (from n) * 2 + 1
+
+_ : inc (⟨⟩ O O I O I I) ≡ ⟨⟩ O O I I O O
+_ = refl
+
+_ : from (inc (⟨⟩ O O I O I I)) ≡ suc (from (⟨⟩ O O I O I I))
+_ = refl
+
+from-inc-is-suc-from : ∀ (b : Bin) → from (inc b) ≡ suc (from b)
+from-inc-is-suc-from ⟨⟩ = refl
+from-inc-is-suc-from (b O) rewrite +-suc (from b * 2) 0 | +-identityʳ (from b * 2) = refl
+from-inc-is-suc-from (b I)
+  rewrite from-inc-is-suc-from b | +-suc (from b * 2) 0 | +-identityʳ (from b * 2) = refl
+
+-- to (from b) ≡ b does not hold, as binary numbers lack unique representations (assuming ≡ is definitionally equal?).
+-- consider the following counter-example: to (from ⟨⟩ O O I O I I) ≡ ⟨⟩ I O I I ≢ ⟨⟩ O O I O I I
+
+from-to-is-n : ∀ (n : ℕ) → from (to n) ≡ n
+from-to-is-n zero = refl
+from-to-is-n (suc n) rewrite from-inc-is-suc-from (to n) | from-to-is-n n = refl
 ```
 
 
